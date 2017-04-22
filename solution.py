@@ -13,6 +13,7 @@ row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
 
+# The two diagonal units
 diag_units = [[rows[i]+cols[i] for i in range(9)]] + [[rows[8-i] + cols[i] for i in range(9)]]
 
 unitlist = row_units + column_units + square_units + diag_units
@@ -70,8 +71,8 @@ def naked_twins(values):
                 for box in unit:
                     if box not in [box1, twin[0]]:
                         for digit in val1:
-                            temp = values[box] #
-                            values[box] = values[box].replace(digit, '')
+                            temp = values[box].replace(digit, '')
+                            assign_value(values, box, temp)
     return values
 
 def grid_values(grid):
@@ -114,7 +115,9 @@ def eliminate(values):
 
     for box in ones:
         for peer in peers[box]:
-            values[peer] = values[peer].replace(values[box], '')
+            temp = values[peer].replace(values[box], '')
+            assign_value(values, peer, temp)
+
     return values
     
 def only_choice(values):
@@ -128,7 +131,8 @@ def only_choice(values):
             diff = set(values[box]) - set(peer_nums)
 
             if len(diff) == 1:
-                values[box] = diff.pop()
+                temp = diff.pop()
+                assign_value(values, box, temp)
                 # found = True
                 break
 
@@ -192,7 +196,9 @@ def search(values):
     for digit in cand:
         # values0 = copy.deepcopy(values)
         values0 = values.copy()
-        values0[min_box] = digit
+        #values0[min_box] = digit
+        assign_value(values0, min_box, digit)
+
         res = search(values0)
         if not res:
             continue
@@ -223,7 +229,6 @@ if __name__ == '__main__':
     #test_twin()
 
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
-    #display(diag_sudoku_grid)
 
     display(solve(diag_sudoku_grid))
 
