@@ -1,4 +1,29 @@
 assignments = []
+rows = 'ABCDEFGHI'
+cols = '123456789'
+
+def cross(A, B):
+    "Cross product of elements in A and elements in B."
+    res = [a+b for a in A for  b in B]
+    return res
+
+row_units = [cross(r, cols) for r in rows]
+column_units = [cross(rows, c) for c in cols]
+square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
+
+diag_units = [[rows[i]+cols[i] for i in range(9)]] + [[rows[8-i] + cols[i] for i in range(9)]]
+
+unitlist = row_units + column_units + square_units
+
+boxes = cross(rows, cols)
+
+debug = True
+if debug:
+    print(row_units)
+    print(column_units)
+    print(square_units)
+    print(diag_units)
+    print(unitlist)
 
 def assign_value(values, box, value):
     """
@@ -27,10 +52,6 @@ def naked_twins(values):
     # Find all instances of naked twins
     # Eliminate the naked twins as possibilities for their peers
 
-def cross(A, B):
-    "Cross product of elements in A and elements in B."
-    pass
-
 def grid_values(grid):
     """
     Convert grid into a dict of {square: char} with '123456789' for empties.
@@ -52,8 +73,14 @@ def display(values):
     pass
 
 def eliminate(values):
-    pass
+    digits = '123456789'
+    ones = [box for box in boxes if len(values[box]) == 1]
 
+    for box in ones:
+        for peer in peers[box]:
+            values[peer] = values[peer].replace(values[box], '')
+    return values
+    
 def only_choice(values):
     pass
 
