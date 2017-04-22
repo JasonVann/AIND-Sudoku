@@ -7,6 +7,8 @@ def cross(A, B):
     res = [a+b for a in A for  b in B]
     return res
 
+boxes = cross(rows, cols)
+
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
@@ -14,10 +16,12 @@ square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', 
 diag_units = [[rows[i]+cols[i] for i in range(9)]] + [[rows[8-i] + cols[i] for i in range(9)]]
 
 unitlist = row_units + column_units + square_units
+units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
+peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
-boxes = cross(rows, cols)
+print(boxes)
 
-debug = True
+debug = False
 if debug:
     print(row_units)
     print(column_units)
@@ -49,8 +53,26 @@ def naked_twins(values):
         the values dictionary with the naked twins eliminated from peers.
     """
 
+    #display(values)
+
     # Find all instances of naked twins
-    # Eliminate the naked twins as possibilities for their peers
+    for box1 in boxes:
+        val1 = values[box1]
+
+        if len(val1) != 2:
+            continue
+        for unit in units[box1]:
+            twin = [peer for peer in unit if peer != box1 and values[peer] == val1]
+
+            if len(twin):
+                # Now box1 and twin are twins
+                # Eliminate the naked twins as possibilities for their peers
+                for box in unit:
+                    if box not in [box1, twin[0]]:
+                        for digit in val1:
+                            temp = values[box] #
+                            values[box] = values[box].replace(digit, '')
+    return values
 
 def grid_values(grid):
     """
@@ -62,7 +84,13 @@ def grid_values(grid):
             Keys: The boxes, e.g., 'A1'
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
-    pass
+    res = {}
+    res = dict(zip(boxes, grid))
+    for k in res:
+        if res[k] == '.':
+            res[k] = '123456789'
+    return res
+
 
 def display(values):
     """
@@ -70,7 +98,15 @@ def display(values):
     Args:
         values(dict): The sudoku in dictionary form
     """
-    pass
+    #width = 1 + max(len(values[box]) for box in boxes)
+    width = 1 + max(len(values[s]) for s in boxes)
+    line = '+'.join(['-'*(width*3)]*3)
+    for r in rows:
+        print(''.join(values[r+c].center(width)+('|' if c in '36' else '') for c in cols))
+        if r in 'CF':
+            print(line)
+
+    return
 
 def eliminate(values):
     digits = '123456789'
@@ -82,13 +118,87 @@ def eliminate(values):
     return values
     
 def only_choice(values):
-    pass
+    for box in values:
+        if len(values[box]) == 1:
+            continue
+        for unit in units[box]:
+            # found = False
+            peer_nums = [values[peer] for peer in unit if peer != box]
+            peer_nums = ''.join(peer_nums)
+            diff = set(values[box]) - set(peer_nums)
+
+            if len(diff) == 1:
+                values[box] = diff.pop()
+                # found = True
+                break
+
+    return values
 
 def reduce_puzzle(values):
-    pass
+    stalled = False
+    while not stalled:
+        # Check how many boxes have a determined value
+        solved_values_before = len([box for box in values.keys() if len(values[box]) == 1])
+        # Use the Eliminate Strategy
+        values = eliminate(values)
+        # Use the Only Choice Strategy
+        values = only_choice(values)
+
+        # Use the Naked Twin Strategy
+        values = naked_twins(values)
+
+        # Check how many boxes have a determined value, to compare
+        solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
+        # If no new values were added, stop the loop.
+        stalled = solved_values_before == solved_values_after
+        # Sanity check, return False if there is a box with zero available values:
+        if len([box for box in values.keys() if len(values[box]) == 0]):
+            return False
+    return values
+
+def check_solved(values):
+    """
+    Helper function for search
+    """
+    solved = [box for box in boxes if len(values[box]) == 1]
+    return len(solved) == 81
 
 def search(values):
-    pass
+    # "Using depth-first search and propagation, create a search tree and solve the sudoku."
+    # First, reduce the puzzle using the previous function
+
+    res = reduce_puzzle(values)
+    if not res:
+        # No solution
+        return False
+
+    # Choose one of the unfilled squares with the fewest possibilities
+    min_box = None
+    for box in boxes:
+        if len(values[box]) > 1:
+            if min_box is None or len(values[min_box]) > len(values[box]):
+                min_box = box
+
+    if min_box is None:
+        if check_solved(values):
+            # Then the sudoku is already fully solved
+            return values
+        return False
+
+    # Now use recursion to solve each one of the resulting sudokus, and if one returns a value (not False), return that answer!
+
+    #import copy
+    cand = values[min_box]
+    for digit in cand:
+        # values0 = copy.deepcopy(values)
+        values0 = values.copy()
+        values0[min_box] = digit
+        res = search(values0)
+        if not res:
+            continue
+
+        if check_solved(res):
+            return res
 
 def solve(grid):
     """
@@ -99,9 +209,22 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
+    values = grid_values(grid)
+    values = search(values)
+    return values
+
+def test_twin():
+    twin_grid = '1.4.9..68956.18.34..84.695151.....868..6...1264..8..97781923645495.6.823.6.854179'
+    res = solve(twin_grid)
+    display(res)
+
 
 if __name__ == '__main__':
+    #test_twin()
+
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
+    #display(diag_sudoku_grid)
+
     display(solve(diag_sudoku_grid))
 
     try:
