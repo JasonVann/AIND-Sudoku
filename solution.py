@@ -15,11 +15,11 @@ square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', 
 
 diag_units = [[rows[i]+cols[i] for i in range(9)]] + [[rows[8-i] + cols[i] for i in range(9)]]
 
-unitlist = row_units + column_units + square_units
+unitlist = row_units + column_units + square_units + diag_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
-print(boxes)
+#print(boxes)
 
 debug = False
 if debug:
